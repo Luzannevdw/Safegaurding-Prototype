@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Summary V2 — Safeguarding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="summary.html" class="app-header__brand">
+      <img class="app-header__logo" src="assets/dojo-mark-white.svg" width="45" height="24" alt="Dojo" />
+      <span class="app-header__wordmark">safeguarding</span>
+    </a>
+  </header>
+
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div>
+        <div class="sidebar-currency">
+          <label class="sidebar-currency__label">Currency</label>
+          <div class="sidebar-currency__row">
+            <span class="sidebar-currency__value">Pound Sterling</span>
+            <button class="sidebar-currency__swap" type="button" aria-label="Change currency">⇅</button>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="summary.html" class="sidebar-nav__link">Summary</a>
+          <a href="summary-v2.html" class="sidebar-nav__link is-active" aria-current="page">Summary V2</a>
+          <a href="dashboard.html" class="sidebar-nav__link">Entities</a>
+        </nav>
+      </div>
+      <div class="sidebar-footer">
+        <p class="sidebar-footer__user" id="current-user">Demo User</p>
+        <button class="sidebar-footer__logout" type="button" id="btn-logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="app-main app-main--split">
+      <div class="page page--split">
+        <div class="page-title-row">
+          <h1 class="page-title">Summary</h1>
+          <p class="sync-status">
+            Currency data last synced: <span id="currency-sync-time"></span> &nbsp;|&nbsp;
+            Entity data last synced: <span id="entity-sync-time"></span>
+          </p>
+        </div>
+
+        <div class="period-bar">
+          <div class="period-bar__top">
+            <div class="period-bar__controls">
+              <input type="date" id="period-date" value="2026-09-21" />
+              <button class="icon-btn" type="button" id="btn-period-prev" aria-label="Previous period">‹</button>
+              <button class="icon-btn" type="button" id="btn-period-next" aria-label="Next period">›</button>
+            </div>
+            <button class="btn-export" type="button" id="btn-export">Export</button>
+          </div>
+          <span class="status-pill">
+            <span class="status-pill__label">Status</span>
+            <span class="status-pill__dot"></span>
+            Open
+            <span class="status-pill__label">&nbsp;&nbsp;Opened 05/08/2026 01:00:00</span>
+          </span>
+        </div>
+
+        <div class="summary-content summary-content--split">
+
+        <!-- ============================================================ -->
+        <!-- Left column — internal reconciliation                        -->
+        <!-- ============================================================ -->
+        <div class="summary-split__col summary-split__col--left">
+        <section class="card-section recon" aria-labelledby="recon-title">
+          <div class="card recon__card">
+            <div class="card-section__header">
+              <div class="card-section__title-group">
+                <h2 class="card-section__title" id="recon-title">Internal reconciliation</h2>
+                <span class="card-section__info" title="Compares the safeguarding requirement against the safeguarding resource held.">i</span>
+              </div>
+              <button class="btn-export btn-export--sm" type="button" id="btn-export-csv">Export CSV</button>
+            </div>
+
+            <p class="recon__point" id="recon-point">As of 00:00 UTC on the selected date</p>
+
+            <div class="recon__outcome" id="recon-outcome" role="status" aria-live="polite">
+              <span class="recon__outcome-badge" id="recon-outcome-badge">
+                <span class="recon__outcome-icon" id="recon-outcome-icon" aria-hidden="true"></span>
+                <span id="recon-outcome-label">—</span>
+              </span>
+              <p class="recon__outcome-message" id="recon-outcome-message"></p>
+            </div>
+
+            <dl class="recon__compare">
+              <div class="recon__compare-item">
+                <dt class="recon__compare-label">Safeguarding requirement</dt>
+                <dd class="recon__compare-value" id="recon-requirement">—</dd>
+              </div>
+              <div class="recon__compare-op" aria-hidden="true">vs</div>
+              <div class="recon__compare-item">
+                <dt class="recon__compare-label">Safeguarding resource</dt>
+                <dd class="recon__compare-value" id="recon-resource">—</dd>
+              </div>
+              <div class="recon__compare-op" aria-hidden="true">=</div>
+              <div class="recon__compare-item recon__compare-item--emphasis">
+                <dt class="recon__compare-label">Difference</dt>
+                <dd class="recon__compare-value recon__compare-value--lg" id="recon-difference">—</dd>
+              </div>
+            </dl>
+
+            <div id="recon-exceptions"></div>
+
+            <details class="disclosure" id="disclosure-requirement">
+              <summary class="disclosure__summary">
+                <span class="disclosure__chevron" aria-hidden="true"></span>
+                How the requirement was calculated
+              </summary>
+              <div class="disclosure__body">
+                <table class="breakdown">
+                  <caption class="sr-only">Safeguarding requirement breakdown</caption>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Individual safeguarding balances</th>
+                      <td id="rq-individual">—</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Unknown or unallocated relevant funds</th>
+                      <td id="rq-unknown">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <details class="disclosure disclosure--nested">
+                  <summary class="disclosure__summary">
+                    <span class="disclosure__chevron" aria-hidden="true"></span>
+                    Manual entries within unknown or unallocated funds
+                  </summary>
+                  <div class="disclosure__body">
+                    <table class="breakdown">
+                      <caption class="sr-only">Manual entries</caption>
+                      <tbody>
+                        <tr>
+                          <th scope="row">Manual safeguarding entries</th>
+                          <td id="rq-manual">—</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                <table class="breakdown breakdown--total">
+                  <tbody>
+                    <tr>
+                      <th scope="row">Safeguarding requirement</th>
+                      <td id="rq-total">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details class="disclosure" id="disclosure-resource">
+              <summary class="disclosure__summary">
+                <span class="disclosure__chevron" aria-hidden="true"></span>
+                How the resource was calculated
+              </summary>
+              <div class="disclosure__body">
+                <table class="breakdown">
+                  <caption class="sr-only">Safeguarding resource breakdown</caption>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Safeguarded account balances</th>
+                      <td id="rs-safeguarded">—</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Settlement account balances</th>
+                      <td id="rs-settlement">—</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Allocated insurance</th>
+                      <td id="rs-insurance">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <details class="disclosure disclosure--nested">
+                  <summary class="disclosure__summary">
+                    <span class="disclosure__chevron" aria-hidden="true"></span>
+                    Account-level detail
+                  </summary>
+                  <div class="disclosure__body">
+                    <table class="breakdown">
+                      <caption class="breakdown__caption">Safeguarded accounts</caption>
+                      <tbody>
+                        <tr><th scope="row">Banking Circle</th><td id="rs-sg-bc">—</td></tr>
+                        <tr><th scope="row">Citi</th><td id="rs-sg-citi">—</td></tr>
+                      </tbody>
+                    </table>
+                    <table class="breakdown">
+                      <caption class="breakdown__caption">Settlement accounts</caption>
+                      <tbody>
+                        <tr><th scope="row">Banking Circle</th><td id="rs-st-bc">—</td></tr>
+                        <tr><th scope="row">Citi</th><td id="rs-st-citi">—</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                <table class="breakdown breakdown--total">
+                  <tbody>
+                    <tr>
+                      <th scope="row">Total safeguarding resource</th>
+                      <td id="rs-total">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+        </section>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Right column — existing detailed summary                     -->
+        <!-- ============================================================ -->
+        <div class="summary-split__col summary-split__col--right">
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Settlement account reconciliation</h2>
+              <span class="card-section__info">i</span>
+            </div>
+            <span class="card-section__currency">£</span>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Starting settlement account balance</span><span class="card-row__value">0.00</span></li>
+              <li class="card-row"><span class="card-row__label">Total internal transfers</span><span class="card-row__value">168,342,240.39</span></li>
+              <li class="card-row"><span class="card-row__label">Total scheme incoming funds</span><span class="card-row__value">1,632,207,292.62</span></li>
+              <li class="card-row"><span class="card-row__label">Total payouts due</span><span class="card-row__value">413,853.63</span></li>
+              <li class="card-row"><span class="card-row__label">Total same day payout adjustments</span><span class="card-row__value">401,140.23</span></li>
+              <li class="card-row"><span class="card-row__label">Total held funds</span><span class="card-row__value">386,315.08</span></li>
+              <li class="card-row"><span class="card-row__label">Total released funds</span><span class="card-row__value">405,797.34</span></li>
+              <li class="card-row"><span class="card-row__label">Total held returns</span><span class="card-row__value">371,940.63</span></li>
+              <li class="card-row"><span class="card-row__label">Manual entries impacting settlement account balance</span><span class="card-row__value">0.00</span></li>
+              <li class="card-row"><span class="card-row__label">Expected settlement account balance</span><span class="card-row__value">1,800,086,997.52</span></li>
+              <li class="card-row"><span class="card-row__label">Current settlement account balance</span><span class="card-row__value">0.00</span></li>
+              <li class="card-row is-total"><span class="card-row__label">Difference</span><span class="card-row__value">1,800,086,997.52</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Previous safeguarding requirement</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Previous safeguarding requirement</span><span class="card-row__value" id="sum-previous-requirement">—</span></li>
+              <li class="card-row"><span class="card-row__label">Previous requirement excluding transient funds</span><span class="card-row__value">192,624.56</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Held and released funds</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Total held funds</span><span class="card-row__value">386,315.08</span></li>
+              <li class="card-row"><span class="card-row__label">Total released funds</span><span class="card-row__value">405,797.34</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Safeguarding account activity</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Customer payments to safeguarding account</span><span class="card-row__value">427,835.90</span></li>
+              <li class="card-row"><span class="card-row__label">Customer payments from safeguarding account</span><span class="card-row__value">424,024.48</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Held Returns</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Total held returns</span><span class="card-row__value">371,940.63</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Adjustments</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Payout adjustments on held payouts</span><span class="card-row__value">408,991.45</span></li>
+              <li class="card-row"><span class="card-row__label">Profile adjustments</span><span class="card-row__value">360,109.69</span></li>
+              <li class="card-row is-total"><span class="card-row__label">Total adjustments</span><span class="card-row__value">769,101.14</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Exception transactions</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Held exception transactions</span><span class="card-row__value">406,013.74</span></li>
+              <li class="card-row"><span class="card-row__label">Released exception transactions</span><span class="card-row__value">426,688.66</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Transient funds</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Deferred Funds</span><span class="card-row__value">43,305.39</span></li>
+              <li class="card-row"><span class="card-row__label">Scheme settled, not accrued</span><span class="card-row__value">348,604.57</span></li>
+              <li class="card-row"><span class="card-row__label">Transient funds paid out</span><span class="card-row__value">431,776.06</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Manual safeguarding entries</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Manual safeguarding movement</span><span class="card-row__value" id="sum-manual-movement">—</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Safeguarding requirement</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Movement</span><span class="card-row__value" id="sum-movement">—</span></li>
+              <li class="card-row"><span class="card-row__label">Requirement</span><span class="card-row__value" id="sum-requirement">—</span></li>
+              <li class="card-row"><span class="card-row__label">Requirement excluding transient funds</span><span class="card-row__value" id="sum-requirement-ex-transient">—</span></li>
+            </ol>
+            <details class="disclosure disclosure--inline">
+              <summary class="disclosure__summary">
+                <span class="disclosure__chevron" aria-hidden="true"></span>
+                Requirement breakdown
+              </summary>
+              <div class="disclosure__body">
+                <table class="breakdown">
+                  <caption class="sr-only">Requirement breakdown</caption>
+                  <tbody>
+                    <tr><th scope="row">Individual safeguarding balances</th><td id="sum-rq-individual">—</td></tr>
+                    <tr><th scope="row">Unknown or unallocated relevant funds</th><td id="sum-rq-unknown">—</td></tr>
+                    <tr><th scope="row" class="breakdown__sub">of which manual entries</th><td id="sum-rq-manual">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- Safeguarding resource -->
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Safeguarding resource</h2>
+              <span class="card-section__info" title="Safeguarded account balances plus settlement account balances plus allocated insurance, as of 00:00 UTC.">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Safeguarded account balances</span><span class="card-row__value" id="res-safeguarded">—</span></li>
+              <li class="card-row"><span class="card-row__label">Settlement account balances</span><span class="card-row__value" id="res-settlement">—</span></li>
+              <li class="card-row"><span class="card-row__label">Allocated insurance</span><span class="card-row__value" id="res-insurance">—</span></li>
+              <li class="card-row is-total"><span class="card-row__label">Total safeguarding resource</span><span class="card-row__value" id="res-total">—</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Safeguarding insurance</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Insurance available (max)</span><span class="card-row__value" id="ins-available">—</span></li>
+              <li class="card-row"><span class="card-row__label">Insurance required</span><span class="card-row__value" id="ins-required">—</span></li>
+              <li class="card-row"><span class="card-row__label">Insurance allocated</span><span class="card-row__value" id="ins-allocated">—</span></li>
+              <li class="card-row is-total"><span class="card-row__label">Insurance remaining</span><span class="card-row__value" id="ins-remaining">—</span></li>
+            </ol>
+            <div id="ins-cap-alert"></div>
+          </div>
+        </section>
+
+        <section class="card-section">
+          <div class="card-section__header">
+            <div class="card-section__title-group">
+              <h2 class="card-section__title">Safeguarding account</h2>
+              <span class="card-section__info">i</span>
+            </div>
+          </div>
+          <p class="sync-status" style="margin: -8px 0 12px;">Last successfully checked: <span id="account-checked-time"></span></p>
+          <div class="card">
+            <ol>
+              <li class="card-row"><span class="card-row__label">Required safeguarding account balance</span><span class="card-row__value" id="acct-required">—</span></li>
+              <li class="card-row"><span class="card-row__label">Banking Circle safeguarding account balance</span><span class="card-row__value" id="acct-bc">—</span></li>
+              <li class="card-row"><span class="card-row__label">Citi safeguarding account balance</span><span class="card-row__value" id="acct-citi">—</span></li>
+              <li class="card-row is-total"><span class="card-row__label">Required movement to safeguarding account</span><span class="card-row__value" id="acct-movement">—</span></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="notes-history">
+          <h3 class="notes-history__title">Notes and approval history</h3>
+          <div class="timeline-card">
+            <ol class="timeline">
+              <li class="timeline-item">
+                <div class="timeline-item__icon timeline-item__icon--alert">!</div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__header">
+                    <span class="timeline-item__action">Manual entry impacting safeguarding movement</span>
+                    <span class="timeline-item__by"> - by Carolina Armstrong</span>
+                  </div>
+                  <div class="timeline-item__date">05/08/2026 11:31:44</div>
+                  <div class="timeline-item__body">
+                    <p>Tempora sit optio laboriosam et quo velit et quas. Et autem eaque neque rem animi eum maxime fuga ex. Earum est odio in. Ut consequatur fugiat eaque autem incidunt qui iure sed.</p>
+                    <ul>
+                      <li>Illum ullam nostrum ipsam aliquid ab error et omnis.</li>
+                      <li>Consectetur sunt dolor eos non sapiente explicabo.</li>
+                    </ul>
+                    <p class="timeline-item__amount">Manual safeguarding entry amount: <span class="is-negative" id="timeline-manual-amount">—</span></p>
+                  </div>
+                </div>
+              </li>
+              <li class="timeline-item">
+                <div class="timeline-item__icon timeline-item__icon--notes">&#128172;</div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__header">
+                    <span class="timeline-item__action">Notes</span>
+                    <span class="timeline-item__by"> - by Lina Prosacco</span>
+                  </div>
+                  <div class="timeline-item__date">05/08/2026 10:33:44</div>
+                  <div class="timeline-item__body">
+                    <p><strong>beatae</strong> ab. Dignissimos soluta dolor impedit.</p>
+                  </div>
+                </div>
+              </li>
+              <li class="timeline-item timeline-item--last">
+                <div class="timeline-item__icon timeline-item__icon--open"></div>
+                <div class="timeline-item__content">
+                  <div class="timeline-item__header">
+                    <span class="timeline-item__action">Opened</span>
+                    <span class="timeline-item__by"> - by Benji Bonza</span>
+                  </div>
+                  <div class="timeline-item__date">05/08/2026 01:00:00</div>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </section>
+        </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Development-only scenario switcher. Sits outside the product UI. -->
+  <aside class="devbar" id="devbar" aria-label="Prototype scenario switcher">
+    <button class="devbar__toggle" type="button" id="devbar-toggle" aria-expanded="true" aria-controls="devbar-panel">
+      Prototype scenarios
+    </button>
+    <div class="devbar__panel" id="devbar-panel">
+      <p class="devbar__hint">Development only — not part of the product UI.</p>
+      <div class="devbar__options" id="devbar-options" role="radiogroup" aria-label="Reconciliation scenario"></div>
+    </div>
+  </aside>
+
+  <script src="js/icons.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/reconciliation.js"></script>
+  <script src="js/summary-v2.js"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entities — Safeguarding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="summary.html" class="app-header__brand">
+      <img class="app-header__logo" src="assets/dojo-mark-white.svg" width="45" height="24" alt="Dojo" />
+      <span class="app-header__wordmark">safeguarding</span>
+    </a>
+  </header>
+
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div>
+        <div class="sidebar-currency">
+          <label class="sidebar-currency__label">Currency</label>
+          <div class="sidebar-currency__row">
+            <span class="sidebar-currency__value">Pound Sterling</span>
+            <button class="sidebar-currency__swap" type="button" aria-label="Change currency">⇅</button>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="summary.html" class="sidebar-nav__link">Summary</a>
+          <a href="summary-v2.html" class="sidebar-nav__link">Summary V2</a>
+          <a href="dashboard.html" class="sidebar-nav__link is-active">Entities</a>
+        </nav>
+      </div>
+      <div class="sidebar-footer">
+        <p class="sidebar-footer__user" id="current-user">Demo User</p>
+        <button class="sidebar-footer__logout" type="button" id="btn-logout">Logout</button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="page">
+        <div class="page-title-row">
+          <h1 class="page-title">Entities</h1>
+          <p class="sync-status">
+            Currency data last synced: <span id="currency-sync-time"></span> &nbsp;|&nbsp;
+            Entity data last synced: <span id="entity-sync-time"></span>
+          </p>
+        </div>
+
+    <section class="toolbar">
+      <div class="toolbar__row">
+        <div class="period-bar__controls">
+          <input type="date" id="period-date" value="2026-09-11" />
+          <button class="icon-btn" type="button" id="btn-period-prev" aria-label="Previous period">‹</button>
+          <button class="icon-btn" type="button" id="btn-period-next" aria-label="Next period">›</button>
+        </div>
+
+        <span class="spacer"></span>
+
+        <div class="split-btn">
+          <button class="split-btn__main" type="button" id="split-btn-main">Export with transient funds</button>
+          <button class="split-btn__chevron" type="button" aria-label="More export options">▾</button>
+        </div>
+
+        <span class="status-pill"><span class="status-pill__label">Status</span><span class="status-pill__dot"></span>Open</span>
+      </div>
+
+      <div class="toolbar__row">
+        <div class="search-field">
+          <span class="search-field__icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Search by Entity name or Entity ID" />
+        </div>
+
+        <label class="checkbox-field">
+          <input type="checkbox" id="chk-exclude-transient" />
+          Exclude Transient Funds
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="chk-hide-zero-negative" />
+          Show entities with zero or negative balance
+        </label>
+
+        <button class="dropdown-btn" type="button" id="filter-status">
+          All entity statuses <span class="chevron">▾</span>
+        </button>
+        <button class="dropdown-btn" type="button" id="filter-reason">
+          All reasons <span class="chevron">▾</span>
+        </button>
+
+        <button class="text-btn" type="button" id="btn-reset">Reset</button>
+      </div>
+    </section>
+
+    <div class="metrics-row">
+      <div class="metrics-block">
+        <div class="metrics-block__row">
+          <span class="metric__label">Total manual safeguarding movement:</span>
+          <span class="metric__value" id="metric-manual-movement">£0.00</span>
+        </div>
+        <hr class="metrics-block__divider" />
+        <div class="metrics-block__row">
+          <span class="metric__label">Total manual safeguarding requirement:</span>
+          <span class="metric__value" id="metric-manual-requirement">£0.00</span>
+        </div>
+      </div>
+      <div class="metrics-block">
+        <div class="metrics-block__row">
+          <span class="metric__label">Total safeguarding movement:</span>
+          <span class="metric__value" id="metric-total-movement">£0.00</span>
+        </div>
+        <hr class="metrics-block__divider" />
+        <div class="metrics-block__row">
+          <span class="metric__label">Total safeguarding requirement:</span>
+          <span class="metric__value" id="metric-total-requirement">£0.00</span>
+        </div>
+        <hr class="metrics-block__divider" />
+        <div class="metrics-block__row">
+          <span class="metric__label">No. of entities in safeguarding:</span>
+          <span class="metric__value" id="entity-count">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="legend-popover" id="legend-popover">
+        <h4>Entity status legend</h4>
+        <div class="legend-popover__item"><span class="status-chip status-chip--active">Active</span></div>
+        <div class="legend-popover__item"><span class="status-chip status-chip--closed">Closed</span></div>
+        <div class="legend-popover__item"><span class="status-chip status-chip--pending-cancellation">Pending Cancellation</span></div>
+        <div class="legend-popover__item"><span class="status-chip status-chip--cancelled">Cancelled - Awaiting Closure</span></div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr id="table-header-row"></tr>
+          </thead>
+          <tbody id="totals-body">
+            <tr class="totals-row" id="totals-row"></tr>
+          </tbody>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination">
+      <div class="pagination__page-size">
+        <label for="page-size-select">Rows per page</label>
+        <select id="page-size-select">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="pagination__controls">
+        <button type="button" id="btn-first">First</button>
+        <button type="button" id="btn-prev">Previous</button>
+        <span class="pagination__info" id="pagination-info"></span>
+        <button type="button" id="btn-next">Next</button>
+        <button type="button" id="btn-last">Last</button>
+      </div>
+    </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
