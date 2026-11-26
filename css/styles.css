@@ -1406,6 +1406,10 @@ table.data-table {
   border-bottom: 0;
 }
 
+#ins-meter-slot-resource .ins-meter--recon {
+  margin: 12px 0 4px;
+}
+
 .ins-meter--recon .ins-meter__header {
   flex-direction: column;
   align-items: flex-start;

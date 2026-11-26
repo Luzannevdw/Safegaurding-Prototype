@@ -109,17 +109,7 @@
             </dl>
 
             <div id="recon-exceptions"></div>
-
-            <div class="ins-meter ins-meter--recon" id="ins-meter">
-              <div class="ins-meter__header">
-                <span class="ins-meter__label">Insurance used</span>
-                <span class="ins-meter__value"><strong id="ins-meter-allocated">—</strong> of <span id="ins-meter-max">—</span> max</span>
-              </div>
-              <div class="ins-meter__track" role="meter" id="ins-meter-track" aria-label="Insurance allocated against the maximum available" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div class="ins-meter__fill" id="ins-meter-fill"></div>
-              </div>
-              <span class="ins-meter__status" id="ins-meter-status"></span>
-            </div>
+            <div id="ins-meter-slot-alert"></div>
 
             <details class="disclosure" id="disclosure-requirement">
               <summary class="disclosure__summary">
@@ -179,6 +169,19 @@
                     </tr>
                   </tbody>
                 </table>
+
+                <div id="ins-meter-slot-resource">
+                  <div class="ins-meter ins-meter--recon" id="ins-meter">
+                    <div class="ins-meter__header">
+                      <span class="ins-meter__label">Insurance used</span>
+                      <span class="ins-meter__value"><strong id="ins-meter-allocated">—</strong> of <span id="ins-meter-max">—</span> max</span>
+                    </div>
+                    <div class="ins-meter__track" role="meter" id="ins-meter-track" aria-label="Insurance allocated against the maximum available" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                      <div class="ins-meter__fill" id="ins-meter-fill"></div>
+                    </div>
+                    <span class="ins-meter__status" id="ins-meter-status"></span>
+                  </div>
+                </div>
 
                 <details class="disclosure disclosure--nested">
                   <summary class="disclosure__summary">
