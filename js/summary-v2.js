@@ -192,6 +192,7 @@ function renderInsuranceSection(result) {
   setMoney("ins-required", result.insurance.required);
   setMoney("ins-allocated", result.insurance.allocated);
   setMoney("ins-remaining", result.insurance.remaining);
+  renderInsuranceMeter(result.insurance);
 
   const host = document.getElementById("ins-cap-alert");
   host.innerHTML = "";
@@ -210,6 +211,27 @@ function renderInsuranceSection(result) {
       })
     );
   }
+}
+
+function renderInsuranceMeter({ available, allocated, capReached }) {
+  const hasData =
+    typeof allocated === "number" && typeof available === "number" && available > 0;
+  const percent = hasData ? Math.min((allocated / available) * 100, 100) : 0;
+
+  document.getElementById("ins-meter-allocated").textContent =
+    formatPoundsFromPence(allocated);
+  document.getElementById("ins-meter-max").textContent = formatPoundsFromPence(available);
+
+  const track = document.getElementById("ins-meter-track");
+  track.setAttribute("aria-valuenow", String(Math.round(percent)));
+  track.setAttribute("aria-valuetext", `${Math.round(percent)}% of maximum insurance used`);
+  document.getElementById("ins-meter-fill").style.width = `${percent}%`;
+
+  document.getElementById("ins-meter").classList.toggle("is-capped", capReached);
+  setText(
+    "ins-meter-status",
+    capReached ? "Cap reached — maximum insurance fully allocated" : `${Math.round(percent)}% used`
+  );
 }
 
 function renderAccountSection(result) {
