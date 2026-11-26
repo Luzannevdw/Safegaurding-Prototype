@@ -213,14 +213,8 @@ function renderInsuranceMeter({ available, allocated, capReached }) {
   track.setAttribute("aria-valuetext", `${Math.round(percent)}% of maximum insurance used`);
   document.getElementById("ins-meter-fill").style.width = `${percent}%`;
 
-  const meter = document.getElementById("ins-meter");
-  meter.classList.toggle("is-capped", capReached);
-  // Show the meter next to the shortfall alert only when the cap explains it;
-  // otherwise it sits with allocated insurance in the resource breakdown.
-  const slot = document.getElementById(
-    capReached ? "ins-meter-slot-alert" : "ins-meter-slot-resource"
-  );
-  if (meter.parentElement !== slot) slot.appendChild(meter);
+  document.getElementById("ins-meter").classList.toggle("is-capped", capReached);
+
   setText(
     "ins-meter-status",
     capReached ? "Cap reached — maximum insurance fully allocated" : `${Math.round(percent)}% used`
