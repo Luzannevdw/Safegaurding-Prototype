@@ -9,7 +9,6 @@ const OUTCOME_META = {
   Matched: { icon: "check-circle", variant: "matched" },
   Excess: { icon: "trend-up", variant: "excess" },
   Shortfall: { icon: "trend-down", variant: "shortfall" },
-  Incomplete: { icon: "warning-circle", variant: "incomplete" },
 };
 
 let activeScenarioId = RECONCILIATION_SCENARIOS[0].id;
@@ -55,7 +54,7 @@ function render() {
 }
 
 function renderReconciliationSection(result) {
-  const meta = OUTCOME_META[result.outcome] || OUTCOME_META.Incomplete;
+  const meta = OUTCOME_META[result.outcome];
 
   // ASSUMPTION (OPEX to confirm): one timestamp applies to every ledger data point.
   setText(
@@ -64,9 +63,12 @@ function renderReconciliationSection(result) {
   );
 
   const badge = document.getElementById("recon-outcome-badge");
-  badge.className = `recon__outcome-badge recon__outcome-badge--${meta.variant}`;
-  setPhosphorIcon(document.getElementById("recon-outcome-icon"), meta.icon);
-  setText("recon-outcome-label", result.outcome);
+  badge.hidden = !meta;
+  if (meta) {
+    badge.className = `recon__outcome-badge recon__outcome-badge--${meta.variant}`;
+    setPhosphorIcon(document.getElementById("recon-outcome-icon"), meta.icon);
+    setText("recon-outcome-label", result.outcome);
+  }
 
   let message = result.message;
   if (result.isAssumption && result.assumptionNote) {
@@ -108,16 +110,6 @@ function renderExceptions(result) {
   host.innerHTML = "";
 
   const alerts = [];
-
-  if (result.outcome === "Incomplete") {
-    alerts.push({
-      variant: "incomplete",
-      icon: "warning-circle",
-      title: "Reconciliation incomplete",
-      body: `${result.message} Unavailable values are left blank rather than counted as £0.00.`,
-      action: "Restore the missing balance feed, then re-run the reconciliation.",
-    });
-  }
 
   if (result.outcome === "Shortfall") {
     alerts.push({

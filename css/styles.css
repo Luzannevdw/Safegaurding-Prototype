@@ -1247,12 +1247,6 @@ table.data-table {
   color: rgb(140, 32, 32);
 }
 
-.recon__outcome-badge--incomplete {
-  background: rgb(255, 244, 226);
-  border-color: rgb(240, 216, 168);
-  color: rgb(122, 80, 12);
-}
-
 .recon__outcome-message {
   margin: 0;
   font-size: 14px;
@@ -1365,13 +1359,6 @@ table.data-table {
 }
 .alert--shortfall .alert__icon { color: var(--color-danger); }
 .alert--shortfall .alert__title { color: rgb(140, 32, 32); }
-
-.alert--incomplete {
-  background: rgb(255, 244, 226);
-  border-color: rgb(240, 216, 168);
-}
-.alert--incomplete .alert__icon { color: rgb(186, 124, 15); }
-.alert--incomplete .alert__title { color: rgb(122, 80, 12); }
 
 /* --- Progressive disclosure ---------------------------------------------- */
 

@@ -31,8 +31,7 @@ const RECONCILIATION_POINT = "00:00 UTC";
 /**
  * Each scenario is a set of *inputs* only. Every total, outcome and message
  * shown in the UI is derived from these by `calculateReconciliation()`.
- *
- * A `null` balance means "unavailable" and must never be treated as zero.
+
  */
 const RECONCILIATION_SCENARIOS = [
   {
@@ -110,29 +109,6 @@ const RECONCILIATION_SCENARIOS = [
     },
     insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
   },
-  {
-    id: "incomplete",
-    label: "Incomplete — missing balance",
-    date: "2026-09-21",
-    isAssumption: false,
-    requirement: {
-      // ASSUMPTION: replace with confirmed source values.
-      individualSafeguardingBalances: 1_691_422_035,
-      unknownOrUnallocatedFunds: 71_872_452,
-      manualEntries: -116_075,
-      previousRequirement: 36_656_788,
-      transientFunds: 29_725_252,
-    },
-    safeguardedAccounts: {
-      bankingCircle: 600_000_000,
-      citi: 400_000_000,
-    },
-    settlementAccounts: {
-      bankingCircle: 120_000_000,
-      citi: null, // Unavailable — must not be read as £0.00.
-    },
-    insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
-  },
 ];
 
 /* ---------------------------------------------------------------------- */
@@ -193,7 +169,6 @@ function calculateReconciliation(scenario, options = {}) {
     ? options.tolerancePence
     : MATCH_TOLERANCE_PENCE;
 
-  const missingInputs = [];
   const req = scenario.requirement;
 
   // --- Requirement -----------------------------------------------------
@@ -201,9 +176,6 @@ function calculateReconciliation(scenario, options = {}) {
     req.individualSafeguardingBalances,
     req.unknownOrUnallocatedFunds,
   ]);
-  if (!isAvailable(requirementTotal)) {
-    missingInputs.push("Safeguarding requirement components");
-  }
 
   // ASSUMPTION: movement is the period-on-period change in the requirement.
   const movement = isAvailable(requirementTotal)
@@ -219,18 +191,6 @@ function calculateReconciliation(scenario, options = {}) {
   const safeguarded = scenario.safeguardedAccounts;
   const settlement = scenario.settlementAccounts;
 
-  if (!isAvailable(safeguarded.bankingCircle)) {
-    missingInputs.push("Banking Circle safeguarded account balance");
-  }
-  if (!isAvailable(safeguarded.citi)) {
-    missingInputs.push("Citi safeguarded account balance");
-  }
-  if (!isAvailable(settlement.bankingCircle)) {
-    missingInputs.push("Banking Circle settlement account balance");
-  }
-  if (!isAvailable(settlement.citi)) {
-    missingInputs.push("Citi settlement account balance");
-  }
 
   const safeguardedTotal = sumPence([safeguarded.bankingCircle, safeguarded.citi]);
   const settlementTotal = sumPence([settlement.bankingCircle, settlement.citi]);
@@ -278,8 +238,10 @@ function calculateReconciliation(scenario, options = {}) {
       : null;
 
   // --- Outcome ----------------------------------------------------------
-  let outcome = "Incomplete";
-  if (missingInputs.length === 0 && isAvailable(difference)) {
+  // Missing resource data is handled ad hoc with the relevant teams, so there
+  // is no separate "Incomplete" outcome.
+  let outcome = null;
+  if (isAvailable(difference)) {
     if (Math.abs(difference) <= tolerance) outcome = "Matched";
     else if (difference > 0) outcome = "Excess";
     else outcome = "Shortfall";
@@ -333,13 +295,12 @@ function calculateReconciliation(scenario, options = {}) {
 
     difference,
     outcome,
-    missingInputs,
-    message: buildOutcomeMessage(outcome, difference, missingInputs),
+    message: buildOutcomeMessage(outcome, difference),
   };
 }
 
 /** One concise sentence explaining the outcome. */
-function buildOutcomeMessage(outcome, difference, missingInputs) {
+function buildOutcomeMessage(outcome, difference) {
   switch (outcome) {
     case "Matched":
       return "Safeguarding resource exactly meets the safeguarding requirement.";
@@ -352,16 +313,8 @@ function buildOutcomeMessage(outcome, difference, missingInputs) {
         Math.abs(difference)
       )} below the requirement.`;
     default:
-      return `The reconciliation cannot be completed because ${listInputs(
-        missingInputs
-      )} ${missingInputs.length === 1 ? "is" : "are"} unavailable.`;
+      return "";
   }
-}
-
-function listInputs(inputs) {
-  if (inputs.length === 0) return "a required input";
-  if (inputs.length === 1) return inputs[0];
-  return `${inputs.slice(0, -1).join(", ")} and ${inputs[inputs.length - 1]}`;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -370,7 +323,7 @@ function listInputs(inputs) {
 
 /**
  * Lightweight assertions covering the rules that matter most: insurance
- * clamping, the insurance-cap shortfall and missing-data handling. The repo
+ * clamping and the insurance-cap shortfall. The repo
  * has no test runner, so these run in the browser and report to the console.
  */
 function runReconciliationSelfTests() {
@@ -416,15 +369,6 @@ function runReconciliationSelfTests() {
   check("excess: outcome is Excess", excess.outcome === "Excess");
   check("excess: difference is £1,000,000.00", excess.difference === 100_000_000);
   check("excess: allocated insurance floored at zero", excess.insurance.allocated === 0);
-
-  const incomplete = calculateReconciliation(byId("incomplete"));
-  check("incomplete: outcome is Incomplete", incomplete.outcome === "Incomplete");
-  check("incomplete: no resource total", incomplete.resource.total === null);
-  check("incomplete: no difference", incomplete.difference === null);
-  check(
-    "incomplete: names the missing balance",
-    incomplete.missingInputs.some((i) => i.includes("Citi settlement"))
-  );
 
   const failed = results.filter((r) => !r.pass);
   if (failed.length > 0) {

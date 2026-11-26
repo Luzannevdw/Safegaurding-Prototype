@@ -64,7 +64,8 @@ asset paths.
    section at the top that compares the safeguarding *requirement* against
    the safeguarding *resource* (safeguarded accounts + settlement accounts
    + allocated insurance), and states the outcome:
-   **Matched**, **Excess**, **Shortfall** or **Incomplete**.
+   **Matched**, **Excess** or **Shortfall**. There is no "Incomplete"
+   outcome; missing resource data is handled ad hoc with the relevant teams.
    - Allocated insurance is calculated dynamically: requirement minus the
      relevant bank account balances, floored at £0 and capped at the
      £19.5m available limit (to be confirmed with OPEX).
@@ -75,7 +76,7 @@ asset paths.
      breakdown; account-level resource detail is one level deeper.
    - Export uses the existing PDF "Export" button; there is no CSV export.
    - A dashed **"Prototype scenarios"** panel (bottom right, development
-     only — not part of the product UI) switches between the four
+     only — not part of the product UI) switches between the three
      scenarios so each outcome state can be reviewed.
    - All arithmetic is performed in integer pence; pounds only appear at
      the formatting boundary. Unavailable values render as "—" and are
