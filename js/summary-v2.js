@@ -123,20 +123,6 @@ function renderExceptions(result) {
     });
   }
 
-  if (result.insurance.capReached) {
-    alerts.push({
-      variant: "shortfall",
-      icon: "warning",
-      title: "Insurance cap reached",
-      body: `The maximum insurance available is ${formatPoundsFromPence(
-        result.insurance.available
-      )} and is fully allocated. ${formatPoundsFromPence(
-        result.insurance.uncovered
-      )} remains uncovered.`,
-      action: "Review the insurance limit with Treasury before the next cycle.",
-    });
-  }
-
   alerts.forEach((alert) => host.appendChild(buildAlert(alert)));
 }
 
