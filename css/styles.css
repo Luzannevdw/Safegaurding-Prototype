@@ -1190,12 +1190,6 @@ table.data-table {
   padding: 20px;
 }
 
-.btn-export--sm {
-  height: 32px;
-  padding: 0 14px;
-  font-size: 13px;
-}
-
 /* --- Outcome ------------------------------------------------------------ */
 
 .recon__outcome {
@@ -1241,7 +1235,7 @@ table.data-table {
   color: rgb(26, 92, 44);
 }
 
-.recon__outcome-badge--surplus {
+.recon__outcome-badge--excess {
   background: rgb(230, 241, 246);
   border-color: rgb(180, 210, 226);
   color: rgb(22, 77, 105);
@@ -1251,12 +1245,6 @@ table.data-table {
   background: rgb(253, 235, 235);
   border-color: rgb(240, 198, 198);
   color: rgb(140, 32, 32);
-}
-
-.recon__outcome-badge--incomplete {
-  background: rgb(255, 244, 226);
-  border-color: rgb(240, 216, 168);
-  color: rgb(122, 80, 12);
 }
 
 .recon__outcome-message {
@@ -1307,7 +1295,7 @@ table.data-table {
   font-weight: 700;
 }
 
-.recon__compare-value.is-surplus { color: rgb(29, 106, 145); }
+.recon__compare-value.is-excess { color: rgb(29, 106, 145); }
 .recon__compare-value.is-shortfall { color: var(--color-danger); }
 .recon__compare-value.is-unavailable { color: var(--color-text-muted); }
 
@@ -1372,12 +1360,67 @@ table.data-table {
 .alert--shortfall .alert__icon { color: var(--color-danger); }
 .alert--shortfall .alert__title { color: rgb(140, 32, 32); }
 
-.alert--incomplete {
-  background: rgb(255, 244, 226);
-  border-color: rgb(240, 216, 168);
+/* --- Insurance meter ------------------------------------------------------ */
+
+.ins-meter {
+  padding: 4px 0 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-light);
 }
-.alert--incomplete .alert__icon { color: rgb(186, 124, 15); }
-.alert--incomplete .alert__title { color: rgb(122, 80, 12); }
+
+.ins-meter__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.ins-meter__label { color: var(--color-text-muted); }
+
+.ins-meter__track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-nav-active-bg);
+  overflow: hidden;
+}
+
+.ins-meter__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-teal);
+  transition: width 0.3s ease;
+}
+
+.ins-meter__status {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.ins-meter--recon {
+  margin: 16px 0 0;
+  padding: 0;
+  border-bottom: 0;
+}
+
+#ins-meter-slot-resource .ins-meter--recon {
+  margin: 12px 0 4px;
+}
+
+.ins-meter--recon .ins-meter__header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.ins-meter.is-capped .ins-meter__fill { background: var(--color-danger); }
+.ins-meter.is-capped .ins-meter__status {
+  color: var(--color-danger);
+  font-weight: 600;
+}
 
 /* --- Progressive disclosure ---------------------------------------------- */
 

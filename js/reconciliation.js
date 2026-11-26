@@ -4,8 +4,8 @@
    All monetary amounts are held as INTEGER PENCE. Floating-point pounds are
    never used for arithmetic; pounds only ever appear at the formatting edge.
 
-   This module is presentation-free: the screen and the CSV export both call
-   `calculateReconciliation()` so a total can never disagree between them.
+   This module is presentation-free: the screen calls
+   `calculateReconciliation()` for every figure it renders.
    ========================================================================== */
 
 /* ---------------------------------------------------------------------- */
@@ -31,8 +31,7 @@ const RECONCILIATION_POINT = "00:00 UTC";
 /**
  * Each scenario is a set of *inputs* only. Every total, outcome and message
  * shown in the UI is derived from these by `calculateReconciliation()`.
- *
- * A `null` balance means "unavailable" and must never be treated as zero.
+
  */
 const RECONCILIATION_SCENARIOS = [
   {
@@ -86,16 +85,12 @@ const RECONCILIATION_SCENARIOS = [
     insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
   },
   {
-    id: "surplus",
-    label: "Surplus",
+    id: "excess",
+    label: "Excess",
     date: "2026-09-21",
-    // ASSUMPTION: a surplus should not normally arise, because insurance is
-    // allocated only up to the amount required. This scenario forces a higher
-    // allocation to exercise the surplus state; confirm whether over-
-    // allocation is genuinely possible before relying on this.
-    isAssumption: true,
-    assumptionNote:
-      "Allocation logic would normally prevent a surplus. Insurance allocation is forced in this scenario to exercise the surplus state.",
+    // Bank balances alone exceed the requirement, so allocated insurance is
+    // floored at £0 and the remainder is an excess.
+    isAssumption: false,
     requirement: {
       // ASSUMPTION: replace with confirmed source values.
       individualSafeguardingBalances: 1_630_000_000, // £16,300,000.00
@@ -109,33 +104,8 @@ const RECONCILIATION_SCENARIOS = [
       citi: 500_000_000, //          £5,000,000.00
     },
     settlementAccounts: {
-      bankingCircle: 120_000_000, // £1,200,000.00
-      citi: 80_000_000, //             £800,000.00
-    },
-    insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
-    // ASSUMPTION: forced allocation, still clamped to [0, available].
-    allocatedInsuranceOverridePence: 400_000_000, // £4,000,000.00
-  },
-  {
-    id: "incomplete",
-    label: "Incomplete — missing balance",
-    date: "2026-09-21",
-    isAssumption: false,
-    requirement: {
-      // ASSUMPTION: replace with confirmed source values.
-      individualSafeguardingBalances: 1_691_422_035,
-      unknownOrUnallocatedFunds: 71_872_452,
-      manualEntries: -116_075,
-      previousRequirement: 36_656_788,
-      transientFunds: 29_725_252,
-    },
-    safeguardedAccounts: {
-      bankingCircle: 600_000_000,
-      citi: 400_000_000,
-    },
-    settlementAccounts: {
-      bankingCircle: 120_000_000,
-      citi: null, // Unavailable — must not be read as £0.00.
+      bankingCircle: 350_000_000, // £3,500,000.00
+      citi: 250_000_000, //          £2,500,000.00
     },
     insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
   },
@@ -166,12 +136,6 @@ function formatPoundsFromPence(pence) {
     maximumFractionDigits: 2,
   });
   return pence < 0 ? `(£${text})` : `£${text}`;
-}
-
-/** Plain, unsigned CSV representation: -1160.75 rather than (£1,160.75). */
-function penceToCsvValue(pence) {
-  if (!isAvailable(pence)) return "";
-  return (pence / 100).toFixed(2);
 }
 
 function isAvailable(value) {
@@ -205,7 +169,6 @@ function calculateReconciliation(scenario, options = {}) {
     ? options.tolerancePence
     : MATCH_TOLERANCE_PENCE;
 
-  const missingInputs = [];
   const req = scenario.requirement;
 
   // --- Requirement -----------------------------------------------------
@@ -213,9 +176,6 @@ function calculateReconciliation(scenario, options = {}) {
     req.individualSafeguardingBalances,
     req.unknownOrUnallocatedFunds,
   ]);
-  if (!isAvailable(requirementTotal)) {
-    missingInputs.push("Safeguarding requirement components");
-  }
 
   // ASSUMPTION: movement is the period-on-period change in the requirement.
   const movement = isAvailable(requirementTotal)
@@ -231,18 +191,6 @@ function calculateReconciliation(scenario, options = {}) {
   const safeguarded = scenario.safeguardedAccounts;
   const settlement = scenario.settlementAccounts;
 
-  if (!isAvailable(safeguarded.bankingCircle)) {
-    missingInputs.push("Banking Circle safeguarded account balance");
-  }
-  if (!isAvailable(safeguarded.citi)) {
-    missingInputs.push("Citi safeguarded account balance");
-  }
-  if (!isAvailable(settlement.bankingCircle)) {
-    missingInputs.push("Banking Circle settlement account balance");
-  }
-  if (!isAvailable(settlement.citi)) {
-    missingInputs.push("Citi settlement account balance");
-  }
 
   const safeguardedTotal = sumPence([safeguarded.bankingCircle, safeguarded.citi]);
   const settlementTotal = sumPence([settlement.bankingCircle, settlement.citi]);
@@ -265,12 +213,10 @@ function calculateReconciliation(scenario, options = {}) {
       requirementTotal - safeguardedTotal - settlementTotal,
       0
     );
-    const naturalAllocation = Math.min(insuranceRequired, insuranceAvailable);
-    const requested = isAvailable(scenario.allocatedInsuranceOverridePence)
-      ? scenario.allocatedInsuranceOverridePence
-      : naturalAllocation;
-    // Allocation can never be negative, nor exceed the cover available.
-    insuranceAllocated = clamp(requested, 0, insuranceAvailable);
+    // ASSUMPTION (OPEX to confirm): allocated insurance is derived dynamically
+    // from the relevant bank account balances, floored at £0 and capped at
+    // the available insurance limit.
+    insuranceAllocated = clamp(insuranceRequired, 0, insuranceAvailable);
     insuranceRemaining = insuranceAvailable - insuranceAllocated;
   }
 
@@ -292,10 +238,12 @@ function calculateReconciliation(scenario, options = {}) {
       : null;
 
   // --- Outcome ----------------------------------------------------------
-  let outcome = "Incomplete";
-  if (missingInputs.length === 0 && isAvailable(difference)) {
+  // Missing resource data is handled ad hoc with the relevant teams, so there
+  // is no separate "Incomplete" outcome.
+  let outcome = null;
+  if (isAvailable(difference)) {
     if (Math.abs(difference) <= tolerance) outcome = "Matched";
-    else if (difference > 0) outcome = "Surplus";
+    else if (difference > 0) outcome = "Excess";
     else outcome = "Shortfall";
   }
 
@@ -347,17 +295,16 @@ function calculateReconciliation(scenario, options = {}) {
 
     difference,
     outcome,
-    missingInputs,
-    message: buildOutcomeMessage(outcome, difference, missingInputs),
+    message: buildOutcomeMessage(outcome, difference),
   };
 }
 
 /** One concise sentence explaining the outcome. */
-function buildOutcomeMessage(outcome, difference, missingInputs) {
+function buildOutcomeMessage(outcome, difference) {
   switch (outcome) {
     case "Matched":
       return "Safeguarding resource exactly meets the safeguarding requirement.";
-    case "Surplus":
+    case "Excess":
       return `Safeguarding resource exceeds the requirement by ${formatPoundsFromPence(
         Math.abs(difference)
       )}.`;
@@ -366,134 +313,8 @@ function buildOutcomeMessage(outcome, difference, missingInputs) {
         Math.abs(difference)
       )} below the requirement.`;
     default:
-      return `The reconciliation cannot be completed because ${listInputs(
-        missingInputs
-      )} ${missingInputs.length === 1 ? "is" : "are"} unavailable.`;
+      return "";
   }
-}
-
-function listInputs(inputs) {
-  if (inputs.length === 0) return "a required input";
-  if (inputs.length === 1) return inputs[0];
-  return `${inputs.slice(0, -1).join(", ")} and ${inputs[inputs.length - 1]}`;
-}
-
-/* ---------------------------------------------------------------------- */
-/* CSV export                                                              */
-/* ---------------------------------------------------------------------- */
-
-/**
- * Builds the CSV from the *same* calculated result the screen renders, so a
- * total can never differ between the two. Unavailable values stay blank and
- * are never coerced to zero.
- */
-function buildReconciliationCsv(result) {
-  const rows = [["Section", "Item", "Value (GBP)", "Source"]];
-
-  const add = (section, item, pence, source) =>
-    rows.push([section, item, penceToCsvValue(pence), source]);
-
-  rows.push(["Reconciliation", "Date", result.date, "Selected period"]);
-  rows.push(["Reconciliation", "Point in time", result.point, "Fixed"]);
-  rows.push(["Reconciliation", "Outcome", result.outcome, "Derived"]);
-  rows.push(["Reconciliation", "Explanation", result.message, "Derived"]);
-  if (result.missingInputs.length > 0) {
-    rows.push([
-      "Reconciliation",
-      "Missing inputs",
-      result.missingInputs.join("; "),
-      "Derived",
-    ]);
-  }
-
-  add(
-    "Requirement",
-    "Individual safeguarding balances",
-    result.requirement.individualSafeguardingBalances,
-    "ASSUMPTION — confirm source"
-  );
-  add(
-    "Requirement",
-    "Unknown or unallocated relevant funds",
-    result.requirement.unknownOrUnallocatedFunds,
-    "ASSUMPTION — confirm source"
-  );
-  add(
-    "Requirement",
-    "Manual entries (within unknown or unallocated)",
-    result.requirement.manualEntries,
-    "Manual safeguarding entries"
-  );
-  add("Requirement", "Movement", result.requirement.movement, "Derived");
-  add("Requirement", "Safeguarding requirement", result.requirement.total, "Derived");
-  add(
-    "Requirement",
-    "Requirement excluding transient funds",
-    result.requirement.excludingTransientFunds,
-    "Derived"
-  );
-
-  add(
-    "Resource",
-    "Safeguarded account — Banking Circle",
-    result.resource.safeguardedAccounts.bankingCircle,
-    "Banking Circle (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Safeguarded account — Citi",
-    result.resource.safeguardedAccounts.citi,
-    "Citi (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Safeguarded account balances",
-    result.resource.safeguardedAccounts.total,
-    "Derived"
-  );
-  add(
-    "Resource",
-    "Settlement account — Banking Circle",
-    result.resource.settlementAccounts.bankingCircle,
-    "Banking Circle (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Settlement account — Citi",
-    result.resource.settlementAccounts.citi,
-    "Citi (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Settlement account balances",
-    result.resource.settlementAccounts.total,
-    "Derived"
-  );
-  add(
-    "Resource",
-    "Allocated insurance",
-    result.resource.allocatedInsurance,
-    "Derived"
-  );
-  add("Resource", "Total safeguarding resource", result.resource.total, "Derived");
-
-  add("Insurance", "Insurance available (max)", result.insurance.available, "Policy");
-  add("Insurance", "Insurance required", result.insurance.required, "Derived");
-  add("Insurance", "Insurance allocated", result.insurance.allocated, "Derived");
-  add("Insurance", "Insurance remaining", result.insurance.remaining, "Derived");
-
-  add("Outcome", "Difference", result.difference, "Derived");
-
-  return rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-}
-
-function csvCell(value) {
-  const text = value === null || value === undefined ? "" : String(value);
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-function reconciliationCsvFilename(result) {
-  return `safeguarding-reconciliation-${result.date}.csv`;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -502,7 +323,7 @@ function reconciliationCsvFilename(result) {
 
 /**
  * Lightweight assertions covering the rules that matter most: insurance
- * clamping, the insurance-cap shortfall and missing-data handling. The repo
+ * clamping and the insurance-cap shortfall. The repo
  * has no test runner, so these run in the browser and report to the console.
  */
 function runReconciliationSelfTests() {
@@ -544,47 +365,10 @@ function runReconciliationSelfTests() {
     shortfall.insurance.uncovered === Math.abs(shortfall.difference)
   );
 
-  const surplus = calculateReconciliation(byId("surplus"));
-  check("surplus: outcome is Surplus", surplus.outcome === "Surplus");
-  check("surplus: difference is £1,000,000.00", surplus.difference === 100_000_000);
-  check(
-    "surplus: allocation within bounds",
-    surplus.insurance.allocated >= 0 &&
-      surplus.insurance.allocated <= surplus.insurance.available
-  );
-
-  const incomplete = calculateReconciliation(byId("incomplete"));
-  check("incomplete: outcome is Incomplete", incomplete.outcome === "Incomplete");
-  check("incomplete: no resource total", incomplete.resource.total === null);
-  check("incomplete: no difference", incomplete.difference === null);
-  check(
-    "incomplete: names the missing balance",
-    incomplete.missingInputs.some((i) => i.includes("Citi settlement"))
-  );
-  check(
-    "incomplete: CSV leaves the missing value blank",
-    /Settlement account — Citi,,/.test(buildReconciliationCsv(incomplete))
-  );
-  check(
-    "incomplete: CSV states Incomplete",
-    buildReconciliationCsv(incomplete).includes("Outcome,Incomplete")
-  );
-
-  // Negative allocation can never be produced, even from a bad override.
-  const clamped = calculateReconciliation({
-    ...byId("matched"),
-    allocatedInsuranceOverridePence: -500_000,
-  });
-  check("clamp: allocation is never negative", clamped.insurance.allocated === 0);
-
-  const overCap = calculateReconciliation({
-    ...byId("matched"),
-    allocatedInsuranceOverridePence: 9_999_999_999,
-  });
-  check(
-    "clamp: allocation never exceeds available",
-    overCap.insurance.allocated === overCap.insurance.available
-  );
+  const excess = calculateReconciliation(byId("excess"));
+  check("excess: outcome is Excess", excess.outcome === "Excess");
+  check("excess: difference is £1,000,000.00", excess.difference === 100_000_000);
+  check("excess: allocated insurance floored at zero", excess.insurance.allocated === 0);
 
   const failed = results.filter((r) => !r.pass);
   if (failed.length > 0) {

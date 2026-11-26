@@ -20,8 +20,8 @@ css/styles.css        All styling (design tokens as CSS custom properties)
 js/data.js            Seeded mock data generator + formatting helpers
 js/login.js           Login form behaviour
 js/summary.js         Summary page behaviour (sync times, period stepper, export)
-js/reconciliation.js  Reconciliation scenarios + pure calculation/CSV layer
-js/summary-v2.js      Summary V2 rendering, scenario switcher, CSV export
+js/reconciliation.js  Reconciliation scenarios + pure calculation layer
+js/summary-v2.js      Summary V2 rendering, scenario switcher
 js/dashboard.js       Dashboard table/filter/pagination behaviour
 ```
 
@@ -63,14 +63,20 @@ asset paths.
 4. **Summary V2** — the same summary, plus an **Internal reconciliation**
    section at the top that compares the safeguarding *requirement* against
    the safeguarding *resource* (safeguarded accounts + settlement accounts
-   + allocated insurance) as of 00:00 UTC, and states the outcome:
-   **Matched**, **Surplus**, **Shortfall** or **Incomplete**.
+   + allocated insurance), and states the outcome:
+   **Matched**, **Excess** or **Shortfall**. There is no "Incomplete"
+   outcome; missing resource data is handled ad hoc with the relevant teams.
+   - Allocated insurance is calculated dynamically: requirement minus the
+     relevant bank account balances, floored at £0 and capped at the
+     £19.5m available limit (to be confirmed with OPEX).
+   - A single timestamp (00:00 UTC on the selected date) applies to every
+     ledger data point in the reconciliation (to be confirmed with OPEX).
    - Requirement and resource breakdowns are collapsed by default and
-     expand on demand, with account-level detail one level deeper.
-   - "Export CSV" downloads the reconciliation using the *same* calculation
-     functions that render the screen, so the two can never disagree.
+     expand on demand. Manual entries show inline in the requirement
+     breakdown; account-level resource detail is one level deeper.
+   - Export uses the existing PDF "Export" button; there is no CSV export.
    - A dashed **"Prototype scenarios"** panel (bottom right, development
-     only — not part of the product UI) switches between the four
+     only — not part of the product UI) switches between the three
      scenarios so each outcome state can be reviewed.
    - All arithmetic is performed in integer pence; pounds only appear at
      the formatting boundary. Unavailable values render as "—" and are

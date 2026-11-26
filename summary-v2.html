@@ -79,10 +79,9 @@
                 <h2 class="card-section__title" id="recon-title">Internal reconciliation</h2>
                 <span class="card-section__info" title="Compares the safeguarding requirement against the safeguarding resource held.">i</span>
               </div>
-              <button class="btn-export btn-export--sm" type="button" id="btn-export-csv">Export CSV</button>
             </div>
 
-            <p class="recon__point" id="recon-point">As of 00:00 UTC on the selected date</p>
+            <p class="recon__point" id="recon-point">All ledger data points as at 00:00 UTC on the selected date</p>
 
             <div class="recon__outcome" id="recon-outcome" role="status" aria-live="polite">
               <span class="recon__outcome-badge" id="recon-outcome-badge">
@@ -110,6 +109,7 @@
             </dl>
 
             <div id="recon-exceptions"></div>
+            <div id="ins-meter-slot-alert"></div>
 
             <details class="disclosure" id="disclosure-requirement">
               <summary class="disclosure__summary">
@@ -128,26 +128,12 @@
                       <th scope="row">Unknown or unallocated relevant funds</th>
                       <td id="rq-unknown">—</td>
                     </tr>
+                    <tr>
+                      <th scope="row" class="breakdown__sub">of which manual entries</th>
+                      <td id="rq-manual">—</td>
+                    </tr>
                   </tbody>
                 </table>
-
-                <details class="disclosure disclosure--nested">
-                  <summary class="disclosure__summary">
-                    <span class="disclosure__chevron" aria-hidden="true"></span>
-                    Manual entries within unknown or unallocated funds
-                  </summary>
-                  <div class="disclosure__body">
-                    <table class="breakdown">
-                      <caption class="sr-only">Manual entries</caption>
-                      <tbody>
-                        <tr>
-                          <th scope="row">Manual safeguarding entries</th>
-                          <td id="rq-manual">—</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </details>
 
                 <table class="breakdown breakdown--total">
                   <tbody>
@@ -178,11 +164,24 @@
                       <td id="rs-settlement">—</td>
                     </tr>
                     <tr>
-                      <th scope="row">Allocated insurance</th>
+                      <th scope="row" title="Calculated dynamically: requirement minus the relevant bank account balances, floored at £0.00 and capped at the £19,500,000.00 available insurance limit.">Allocated insurance</th>
                       <td id="rs-insurance">—</td>
                     </tr>
                   </tbody>
                 </table>
+
+                <div id="ins-meter-slot-resource">
+                  <div class="ins-meter ins-meter--recon" id="ins-meter">
+                    <div class="ins-meter__header">
+                      <span class="ins-meter__label">Insurance used</span>
+                      <span class="ins-meter__value"><strong id="ins-meter-allocated">—</strong> of <span id="ins-meter-max">—</span> max</span>
+                    </div>
+                    <div class="ins-meter__track" role="meter" id="ins-meter-track" aria-label="Insurance allocated against the maximum available" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                      <div class="ins-meter__fill" id="ins-meter-fill"></div>
+                    </div>
+                    <span class="ins-meter__status" id="ins-meter-status"></span>
+                  </div>
+                </div>
 
                 <details class="disclosure disclosure--nested">
                   <summary class="disclosure__summary">
@@ -415,7 +414,7 @@
             <ol>
               <li class="card-row"><span class="card-row__label">Safeguarded account balances</span><span class="card-row__value" id="res-safeguarded">—</span></li>
               <li class="card-row"><span class="card-row__label">Settlement account balances</span><span class="card-row__value" id="res-settlement">—</span></li>
-              <li class="card-row"><span class="card-row__label">Allocated insurance</span><span class="card-row__value" id="res-insurance">—</span></li>
+              <li class="card-row"><span class="card-row__label" title="Calculated dynamically: requirement minus the relevant bank account balances, floored at £0.00 and capped at the £19,500,000.00 available insurance limit.">Allocated insurance</span><span class="card-row__value" id="res-insurance">—</span></li>
               <li class="card-row is-total"><span class="card-row__label">Total safeguarding resource</span><span class="card-row__value" id="res-total">—</span></li>
             </ol>
           </div>
@@ -432,7 +431,7 @@
             <ol>
               <li class="card-row"><span class="card-row__label">Insurance available (max)</span><span class="card-row__value" id="ins-available">—</span></li>
               <li class="card-row"><span class="card-row__label">Insurance required</span><span class="card-row__value" id="ins-required">—</span></li>
-              <li class="card-row"><span class="card-row__label">Insurance allocated</span><span class="card-row__value" id="ins-allocated">—</span></li>
+              <li class="card-row"><span class="card-row__label" title="Calculated dynamically: requirement minus the relevant bank account balances, floored at £0.00 and capped at the £19,500,000.00 available insurance limit.">Insurance allocated</span><span class="card-row__value" id="ins-allocated">—</span></li>
               <li class="card-row is-total"><span class="card-row__label">Insurance remaining</span><span class="card-row__value" id="ins-remaining">—</span></li>
             </ol>
             <div id="ins-cap-alert"></div>

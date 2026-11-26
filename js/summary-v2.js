@@ -2,14 +2,13 @@
    Summary V2 — internal reconciliation page controller.
 
    Presentation only. Every figure comes from `calculateReconciliation()` in
-   js/reconciliation.js, so the screen and the CSV can never disagree.
+   js/reconciliation.js.
    ========================================================================== */
 
 const OUTCOME_META = {
   Matched: { icon: "check-circle", variant: "matched" },
-  Surplus: { icon: "trend-up", variant: "surplus" },
+  Excess: { icon: "trend-up", variant: "excess" },
   Shortfall: { icon: "trend-down", variant: "shortfall" },
-  Incomplete: { icon: "warning-circle", variant: "incomplete" },
 };
 
 let activeScenarioId = RECONCILIATION_SCENARIOS[0].id;
@@ -55,14 +54,21 @@ function render() {
 }
 
 function renderReconciliationSection(result) {
-  const meta = OUTCOME_META[result.outcome] || OUTCOME_META.Incomplete;
+  const meta = OUTCOME_META[result.outcome];
 
-  setText("recon-point", `As of ${result.point} on ${formatDisplayDate(result.date)}`);
+  // ASSUMPTION (OPEX to confirm): one timestamp applies to every ledger data point.
+  setText(
+    "recon-point",
+    `All ledger data points as at ${result.point} on ${formatDisplayDate(result.date)}`
+  );
 
   const badge = document.getElementById("recon-outcome-badge");
-  badge.className = `recon__outcome-badge recon__outcome-badge--${meta.variant}`;
-  setPhosphorIcon(document.getElementById("recon-outcome-icon"), meta.icon);
-  setText("recon-outcome-label", result.outcome);
+  badge.hidden = !meta;
+  if (meta) {
+    badge.className = `recon__outcome-badge recon__outcome-badge--${meta.variant}`;
+    setPhosphorIcon(document.getElementById("recon-outcome-icon"), meta.icon);
+    setText("recon-outcome-label", result.outcome);
+  }
 
   let message = result.message;
   if (result.isAssumption && result.assumptionNote) {
@@ -75,8 +81,8 @@ function renderReconciliationSection(result) {
   setMoney("recon-difference", result.difference, { withSymbol: true });
 
   const differenceEl = document.getElementById("recon-difference");
-  differenceEl.classList.remove("is-surplus", "is-shortfall");
-  if (result.outcome === "Surplus") differenceEl.classList.add("is-surplus");
+  differenceEl.classList.remove("is-excess", "is-shortfall");
+  if (result.outcome === "Excess") differenceEl.classList.add("is-excess");
   if (result.outcome === "Shortfall") differenceEl.classList.add("is-shortfall");
 
   renderExceptions(result);
@@ -105,16 +111,6 @@ function renderExceptions(result) {
 
   const alerts = [];
 
-  if (result.outcome === "Incomplete") {
-    alerts.push({
-      variant: "incomplete",
-      icon: "warning-circle",
-      title: "Reconciliation incomplete",
-      body: `${result.message} Unavailable values are left blank rather than counted as £0.00.`,
-      action: "Restore the missing balance feed, then re-run the reconciliation.",
-    });
-  }
-
   if (result.outcome === "Shortfall") {
     alerts.push({
       variant: "shortfall",
@@ -124,18 +120,6 @@ function renderExceptions(result) {
         Math.abs(result.difference)
       )} below the requirement.`,
       action: "Fund the safeguarding account or increase cover to close the gap.",
-    });
-  }
-
-  if (result.insurance.capReached) {
-    alerts.push({
-      variant: "shortfall",
-      icon: "warning",
-      title: "Insurance cap reached",
-      body: `Available insurance is fully allocated. ${formatPoundsFromPence(
-        result.insurance.uncovered
-      )} remains uncovered.`,
-      action: "Review the insurance limit with Treasury before the next cycle.",
     });
   }
 
@@ -194,6 +178,7 @@ function renderInsuranceSection(result) {
   setMoney("ins-required", result.insurance.required);
   setMoney("ins-allocated", result.insurance.allocated);
   setMoney("ins-remaining", result.insurance.remaining);
+  renderInsuranceMeter(result.insurance);
 
   const host = document.getElementById("ins-cap-alert");
   host.innerHTML = "";
@@ -203,13 +188,43 @@ function renderInsuranceSection(result) {
         variant: "shortfall",
         icon: "warning",
         title: "Insurance fully allocated",
-        body: `Available insurance is fully allocated. ${formatPoundsFromPence(
+        body: `The maximum insurance available (${formatPoundsFromPence(
+          result.insurance.available
+        )}) is fully allocated. ${formatPoundsFromPence(
           result.insurance.uncovered
         )} remains uncovered.`,
         action: "This uncovered amount is the shortfall shown in the reconciliation.",
       })
     );
   }
+}
+
+function renderInsuranceMeter({ available, allocated, capReached }) {
+  const hasData =
+    typeof allocated === "number" && typeof available === "number" && available > 0;
+  const percent = hasData ? Math.min((allocated / available) * 100, 100) : 0;
+
+  document.getElementById("ins-meter-allocated").textContent =
+    formatPoundsFromPence(allocated);
+  document.getElementById("ins-meter-max").textContent = formatPoundsFromPence(available);
+
+  const track = document.getElementById("ins-meter-track");
+  track.setAttribute("aria-valuenow", String(Math.round(percent)));
+  track.setAttribute("aria-valuetext", `${Math.round(percent)}% of maximum insurance used`);
+  document.getElementById("ins-meter-fill").style.width = `${percent}%`;
+
+  const meter = document.getElementById("ins-meter");
+  meter.classList.toggle("is-capped", capReached);
+  // Show the meter next to the shortfall alert only when the cap explains it;
+  // otherwise it sits with allocated insurance in the resource breakdown.
+  const slot = document.getElementById(
+    capReached ? "ins-meter-slot-alert" : "ins-meter-slot-resource"
+  );
+  if (meter.parentElement !== slot) slot.appendChild(meter);
+  setText(
+    "ins-meter-status",
+    capReached ? "Cap reached — maximum insurance fully allocated" : `${Math.round(percent)}% used`
+  );
 }
 
 function renderAccountSection(result) {
@@ -282,25 +297,6 @@ function renderScenarioOptions() {
 }
 
 /* ---------------------------------------------------------------------- */
-/* CSV export                                                              */
-/* ---------------------------------------------------------------------- */
-
-function exportCsv() {
-  const result = calculateReconciliation(getActiveScenario());
-  const csv = buildReconciliationCsv(result);
-  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = reconciliationCsvFilename(result);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-/* ---------------------------------------------------------------------- */
 /* Boot                                                                    */
 /* ---------------------------------------------------------------------- */
 
@@ -340,8 +336,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 900);
     });
   }
-
-  document.getElementById("btn-export-csv").addEventListener("click", exportCsv);
 
   const devToggle = document.getElementById("devbar-toggle");
   const devPanel = document.getElementById("devbar-panel");
