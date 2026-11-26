@@ -136,7 +136,9 @@ function renderExceptions(result) {
       variant: "shortfall",
       icon: "warning",
       title: "Insurance cap reached",
-      body: `Available insurance is fully allocated. ${formatPoundsFromPence(
+      body: `The maximum insurance available is ${formatPoundsFromPence(
+        result.insurance.available
+      )} and is fully allocated. ${formatPoundsFromPence(
         result.insurance.uncovered
       )} remains uncovered.`,
       action: "Review the insurance limit with Treasury before the next cycle.",
@@ -207,7 +209,9 @@ function renderInsuranceSection(result) {
         variant: "shortfall",
         icon: "warning",
         title: "Insurance fully allocated",
-        body: `Available insurance is fully allocated. ${formatPoundsFromPence(
+        body: `The maximum insurance available (${formatPoundsFromPence(
+          result.insurance.available
+        )}) is fully allocated. ${formatPoundsFromPence(
           result.insurance.uncovered
         )} remains uncovered.`,
         action: "This uncovered amount is the shortfall shown in the reconciliation.",
