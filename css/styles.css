@@ -1190,12 +1190,6 @@ table.data-table {
   padding: 20px;
 }
 
-.btn-export--sm {
-  height: 32px;
-  padding: 0 14px;
-  font-size: 13px;
-}
-
 /* --- Outcome ------------------------------------------------------------ */
 
 .recon__outcome {

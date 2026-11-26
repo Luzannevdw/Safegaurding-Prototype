@@ -4,8 +4,8 @@
    All monetary amounts are held as INTEGER PENCE. Floating-point pounds are
    never used for arithmetic; pounds only ever appear at the formatting edge.
 
-   This module is presentation-free: the screen and the CSV export both call
-   `calculateReconciliation()` so a total can never disagree between them.
+   This module is presentation-free: the screen calls
+   `calculateReconciliation()` for every figure it renders.
    ========================================================================== */
 
 /* ---------------------------------------------------------------------- */
@@ -166,12 +166,6 @@ function formatPoundsFromPence(pence) {
     maximumFractionDigits: 2,
   });
   return pence < 0 ? `(£${text})` : `£${text}`;
-}
-
-/** Plain, unsigned CSV representation: -1160.75 rather than (£1,160.75). */
-function penceToCsvValue(pence) {
-  if (!isAvailable(pence)) return "";
-  return (pence / 100).toFixed(2);
 }
 
 function isAvailable(value) {
@@ -379,124 +373,6 @@ function listInputs(inputs) {
 }
 
 /* ---------------------------------------------------------------------- */
-/* CSV export                                                              */
-/* ---------------------------------------------------------------------- */
-
-/**
- * Builds the CSV from the *same* calculated result the screen renders, so a
- * total can never differ between the two. Unavailable values stay blank and
- * are never coerced to zero.
- */
-function buildReconciliationCsv(result) {
-  const rows = [["Section", "Item", "Value (GBP)", "Source"]];
-
-  const add = (section, item, pence, source) =>
-    rows.push([section, item, penceToCsvValue(pence), source]);
-
-  rows.push(["Reconciliation", "Date", result.date, "Selected period"]);
-  rows.push(["Reconciliation", "Point in time", result.point, "Fixed"]);
-  rows.push(["Reconciliation", "Outcome", result.outcome, "Derived"]);
-  rows.push(["Reconciliation", "Explanation", result.message, "Derived"]);
-  if (result.missingInputs.length > 0) {
-    rows.push([
-      "Reconciliation",
-      "Missing inputs",
-      result.missingInputs.join("; "),
-      "Derived",
-    ]);
-  }
-
-  add(
-    "Requirement",
-    "Individual safeguarding balances",
-    result.requirement.individualSafeguardingBalances,
-    "ASSUMPTION — confirm source"
-  );
-  add(
-    "Requirement",
-    "Unknown or unallocated relevant funds",
-    result.requirement.unknownOrUnallocatedFunds,
-    "ASSUMPTION — confirm source"
-  );
-  add(
-    "Requirement",
-    "Manual entries (within unknown or unallocated)",
-    result.requirement.manualEntries,
-    "Manual safeguarding entries"
-  );
-  add("Requirement", "Movement", result.requirement.movement, "Derived");
-  add("Requirement", "Safeguarding requirement", result.requirement.total, "Derived");
-  add(
-    "Requirement",
-    "Requirement excluding transient funds",
-    result.requirement.excludingTransientFunds,
-    "Derived"
-  );
-
-  add(
-    "Resource",
-    "Safeguarded account — Banking Circle",
-    result.resource.safeguardedAccounts.bankingCircle,
-    "Banking Circle (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Safeguarded account — Citi",
-    result.resource.safeguardedAccounts.citi,
-    "Citi (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Safeguarded account balances",
-    result.resource.safeguardedAccounts.total,
-    "Derived"
-  );
-  add(
-    "Resource",
-    "Settlement account — Banking Circle",
-    result.resource.settlementAccounts.bankingCircle,
-    "Banking Circle (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Settlement account — Citi",
-    result.resource.settlementAccounts.citi,
-    "Citi (00:00 UTC)"
-  );
-  add(
-    "Resource",
-    "Settlement account balances",
-    result.resource.settlementAccounts.total,
-    "Derived"
-  );
-  add(
-    "Resource",
-    "Allocated insurance",
-    result.resource.allocatedInsurance,
-    "Derived"
-  );
-  add("Resource", "Total safeguarding resource", result.resource.total, "Derived");
-
-  add("Insurance", "Insurance available (max)", result.insurance.available, "Policy");
-  add("Insurance", "Insurance required", result.insurance.required, "Derived");
-  add("Insurance", "Insurance allocated", result.insurance.allocated, "Derived");
-  add("Insurance", "Insurance remaining", result.insurance.remaining, "Derived");
-
-  add("Outcome", "Difference", result.difference, "Derived");
-
-  return rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
-}
-
-function csvCell(value) {
-  const text = value === null || value === undefined ? "" : String(value);
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-function reconciliationCsvFilename(result) {
-  return `safeguarding-reconciliation-${result.date}.csv`;
-}
-
-/* ---------------------------------------------------------------------- */
 /* Development self-checks                                                 */
 /* ---------------------------------------------------------------------- */
 
@@ -560,14 +436,6 @@ function runReconciliationSelfTests() {
   check(
     "incomplete: names the missing balance",
     incomplete.missingInputs.some((i) => i.includes("Citi settlement"))
-  );
-  check(
-    "incomplete: CSV leaves the missing value blank",
-    /Settlement account — Citi,,/.test(buildReconciliationCsv(incomplete))
-  );
-  check(
-    "incomplete: CSV states Incomplete",
-    buildReconciliationCsv(incomplete).includes("Outcome,Incomplete")
   );
 
   // Negative allocation can never be produced, even from a bad override.

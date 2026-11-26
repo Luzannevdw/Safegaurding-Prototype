@@ -2,7 +2,7 @@
    Summary V2 — internal reconciliation page controller.
 
    Presentation only. Every figure comes from `calculateReconciliation()` in
-   js/reconciliation.js, so the screen and the CSV can never disagree.
+   js/reconciliation.js.
    ========================================================================== */
 
 const OUTCOME_META = {
@@ -57,7 +57,11 @@ function render() {
 function renderReconciliationSection(result) {
   const meta = OUTCOME_META[result.outcome] || OUTCOME_META.Incomplete;
 
-  setText("recon-point", `As of ${result.point} on ${formatDisplayDate(result.date)}`);
+  // ASSUMPTION (OPEX to confirm): one timestamp applies to every ledger data point.
+  setText(
+    "recon-point",
+    `All ledger data points as at ${result.point} on ${formatDisplayDate(result.date)}`
+  );
 
   const badge = document.getElementById("recon-outcome-badge");
   badge.className = `recon__outcome-badge recon__outcome-badge--${meta.variant}`;
@@ -282,25 +286,6 @@ function renderScenarioOptions() {
 }
 
 /* ---------------------------------------------------------------------- */
-/* CSV export                                                              */
-/* ---------------------------------------------------------------------- */
-
-function exportCsv() {
-  const result = calculateReconciliation(getActiveScenario());
-  const csv = buildReconciliationCsv(result);
-  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = reconciliationCsvFilename(result);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-/* ---------------------------------------------------------------------- */
 /* Boot                                                                    */
 /* ---------------------------------------------------------------------- */
 
@@ -340,8 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 900);
     });
   }
-
-  document.getElementById("btn-export-csv").addEventListener("click", exportCsv);
 
   const devToggle = document.getElementById("devbar-toggle");
   const devPanel = document.getElementById("devbar-panel");
