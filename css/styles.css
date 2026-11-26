@@ -1235,7 +1235,7 @@ table.data-table {
   color: rgb(26, 92, 44);
 }
 
-.recon__outcome-badge--surplus {
+.recon__outcome-badge--excess {
   background: rgb(230, 241, 246);
   border-color: rgb(180, 210, 226);
   color: rgb(22, 77, 105);
@@ -1301,7 +1301,7 @@ table.data-table {
   font-weight: 700;
 }
 
-.recon__compare-value.is-surplus { color: rgb(29, 106, 145); }
+.recon__compare-value.is-excess { color: rgb(29, 106, 145); }
 .recon__compare-value.is-shortfall { color: var(--color-danger); }
 .recon__compare-value.is-unavailable { color: var(--color-text-muted); }
 

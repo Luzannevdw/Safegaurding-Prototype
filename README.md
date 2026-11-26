@@ -64,7 +64,10 @@ asset paths.
    section at the top that compares the safeguarding *requirement* against
    the safeguarding *resource* (safeguarded accounts + settlement accounts
    + allocated insurance), and states the outcome:
-   **Matched**, **Surplus**, **Shortfall** or **Incomplete**.
+   **Matched**, **Excess**, **Shortfall** or **Incomplete**.
+   - Allocated insurance is calculated dynamically: requirement minus the
+     relevant bank account balances, floored at £0 and capped at the
+     £19.5m available limit (to be confirmed with OPEX).
    - A single timestamp (00:00 UTC on the selected date) applies to every
      ledger data point in the reconciliation (to be confirmed with OPEX).
    - Requirement and resource breakdowns are collapsed by default and

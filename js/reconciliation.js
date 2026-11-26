@@ -86,16 +86,12 @@ const RECONCILIATION_SCENARIOS = [
     insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
   },
   {
-    id: "surplus",
-    label: "Surplus",
+    id: "excess",
+    label: "Excess",
     date: "2026-09-21",
-    // ASSUMPTION: a surplus should not normally arise, because insurance is
-    // allocated only up to the amount required. This scenario forces a higher
-    // allocation to exercise the surplus state; confirm whether over-
-    // allocation is genuinely possible before relying on this.
-    isAssumption: true,
-    assumptionNote:
-      "Allocation logic would normally prevent a surplus. Insurance allocation is forced in this scenario to exercise the surplus state.",
+    // Bank balances alone exceed the requirement, so allocated insurance is
+    // floored at £0 and the remainder is an excess.
+    isAssumption: false,
     requirement: {
       // ASSUMPTION: replace with confirmed source values.
       individualSafeguardingBalances: 1_630_000_000, // £16,300,000.00
@@ -109,12 +105,10 @@ const RECONCILIATION_SCENARIOS = [
       citi: 500_000_000, //          £5,000,000.00
     },
     settlementAccounts: {
-      bankingCircle: 120_000_000, // £1,200,000.00
-      citi: 80_000_000, //             £800,000.00
+      bankingCircle: 350_000_000, // £3,500,000.00
+      citi: 250_000_000, //          £2,500,000.00
     },
     insuranceAvailablePence: INSURANCE_AVAILABLE_PENCE,
-    // ASSUMPTION: forced allocation, still clamped to [0, available].
-    allocatedInsuranceOverridePence: 400_000_000, // £4,000,000.00
   },
   {
     id: "incomplete",
@@ -259,12 +253,10 @@ function calculateReconciliation(scenario, options = {}) {
       requirementTotal - safeguardedTotal - settlementTotal,
       0
     );
-    const naturalAllocation = Math.min(insuranceRequired, insuranceAvailable);
-    const requested = isAvailable(scenario.allocatedInsuranceOverridePence)
-      ? scenario.allocatedInsuranceOverridePence
-      : naturalAllocation;
-    // Allocation can never be negative, nor exceed the cover available.
-    insuranceAllocated = clamp(requested, 0, insuranceAvailable);
+    // ASSUMPTION (OPEX to confirm): allocated insurance is derived dynamically
+    // from the relevant bank account balances, floored at £0 and capped at
+    // the available insurance limit.
+    insuranceAllocated = clamp(insuranceRequired, 0, insuranceAvailable);
     insuranceRemaining = insuranceAvailable - insuranceAllocated;
   }
 
@@ -289,7 +281,7 @@ function calculateReconciliation(scenario, options = {}) {
   let outcome = "Incomplete";
   if (missingInputs.length === 0 && isAvailable(difference)) {
     if (Math.abs(difference) <= tolerance) outcome = "Matched";
-    else if (difference > 0) outcome = "Surplus";
+    else if (difference > 0) outcome = "Excess";
     else outcome = "Shortfall";
   }
 
@@ -351,7 +343,7 @@ function buildOutcomeMessage(outcome, difference, missingInputs) {
   switch (outcome) {
     case "Matched":
       return "Safeguarding resource exactly meets the safeguarding requirement.";
-    case "Surplus":
+    case "Excess":
       return `Safeguarding resource exceeds the requirement by ${formatPoundsFromPence(
         Math.abs(difference)
       )}.`;
@@ -420,14 +412,10 @@ function runReconciliationSelfTests() {
     shortfall.insurance.uncovered === Math.abs(shortfall.difference)
   );
 
-  const surplus = calculateReconciliation(byId("surplus"));
-  check("surplus: outcome is Surplus", surplus.outcome === "Surplus");
-  check("surplus: difference is £1,000,000.00", surplus.difference === 100_000_000);
-  check(
-    "surplus: allocation within bounds",
-    surplus.insurance.allocated >= 0 &&
-      surplus.insurance.allocated <= surplus.insurance.available
-  );
+  const excess = calculateReconciliation(byId("excess"));
+  check("excess: outcome is Excess", excess.outcome === "Excess");
+  check("excess: difference is £1,000,000.00", excess.difference === 100_000_000);
+  check("excess: allocated insurance floored at zero", excess.insurance.allocated === 0);
 
   const incomplete = calculateReconciliation(byId("incomplete"));
   check("incomplete: outcome is Incomplete", incomplete.outcome === "Incomplete");
@@ -436,22 +424,6 @@ function runReconciliationSelfTests() {
   check(
     "incomplete: names the missing balance",
     incomplete.missingInputs.some((i) => i.includes("Citi settlement"))
-  );
-
-  // Negative allocation can never be produced, even from a bad override.
-  const clamped = calculateReconciliation({
-    ...byId("matched"),
-    allocatedInsuranceOverridePence: -500_000,
-  });
-  check("clamp: allocation is never negative", clamped.insurance.allocated === 0);
-
-  const overCap = calculateReconciliation({
-    ...byId("matched"),
-    allocatedInsuranceOverridePence: 9_999_999_999,
-  });
-  check(
-    "clamp: allocation never exceeds available",
-    overCap.insurance.allocated === overCap.insurance.available
   );
 
   const failed = results.filter((r) => !r.pass);

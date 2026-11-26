@@ -7,7 +7,7 @@
 
 const OUTCOME_META = {
   Matched: { icon: "check-circle", variant: "matched" },
-  Surplus: { icon: "trend-up", variant: "surplus" },
+  Excess: { icon: "trend-up", variant: "excess" },
   Shortfall: { icon: "trend-down", variant: "shortfall" },
   Incomplete: { icon: "warning-circle", variant: "incomplete" },
 };
@@ -79,8 +79,8 @@ function renderReconciliationSection(result) {
   setMoney("recon-difference", result.difference, { withSymbol: true });
 
   const differenceEl = document.getElementById("recon-difference");
-  differenceEl.classList.remove("is-surplus", "is-shortfall");
-  if (result.outcome === "Surplus") differenceEl.classList.add("is-surplus");
+  differenceEl.classList.remove("is-excess", "is-shortfall");
+  if (result.outcome === "Excess") differenceEl.classList.add("is-excess");
   if (result.outcome === "Shortfall") differenceEl.classList.add("is-shortfall");
 
   renderExceptions(result);
